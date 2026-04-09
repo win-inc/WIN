@@ -105,7 +105,8 @@ on public.projects
 for select
 to authenticated
 using (
-  exists (
+  created_by = auth.uid()
+  or exists (
     select 1
     from public.project_members pm
     where pm.project_id = projects.id

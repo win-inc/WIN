@@ -106,6 +106,12 @@ function makeAnnotationId() {
     : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
+function makeProjectId() {
+  return typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
 function projectShareUrl(projectId: string) {
   if (typeof window === "undefined") {
     return `?project=${projectId}`;
@@ -536,26 +542,27 @@ export default function App() {
       }
     }
 
-    const { data: projectData, error: projectInsertError } = await supabase
+    const projectId = makeProjectId();
+
+    const { error: projectInsertError } = await supabase
       .from("projects")
       .insert({
+        id: projectId,
         title,
         source_type: projectForm.sourceType,
         source_url: sourceUrl,
         asset_path: assetPath,
         asset_name: assetName,
         created_by: user.id
-      })
-      .select("*")
-      .single();
+      });
 
-    if (projectInsertError || !projectData) {
-      setProjectError(projectInsertError?.message ?? "案件作成に失敗しました。");
+    if (projectInsertError) {
+      setProjectError(projectInsertError.message ?? "案件作成に失敗しました。");
       return;
     }
 
     const { error: memberInsertError } = await supabase.from("project_members").insert({
-      project_id: projectData.id,
+      project_id: projectId,
       user_id: user.id,
       role: "owner"
     });
@@ -569,7 +576,7 @@ export default function App() {
     setProjectForm(defaultProjectForm);
     setShowCreateProject(false);
     await fetchProjects(user.id);
-    setActiveProjectId(projectData.id);
+    setActiveProjectId(projectId);
   }
 
   async function handleAddMember(event: React.FormEvent<HTMLFormElement>) {
