@@ -3,15 +3,17 @@ import type { Annotation } from "../types";
 
 type CommentSidebarProps = {
   annotations: Annotation[];
-  selectedId: number | null;
-  onSelect: (id: number) => void;
-  onUpdateComment: (id: number, comment: string) => void;
-  onDelete: (id: number) => void;
+  selectedId: string | null;
+  readOnly?: boolean;
+  onSelect: (id: string) => void;
+  onUpdateComment: (id: string, comment: string) => void;
+  onDelete: (id: string) => void;
 };
 
 export function CommentSidebar({
   annotations,
   selectedId,
+  readOnly = false,
   onSelect,
   onUpdateComment,
   onDelete
@@ -51,6 +53,7 @@ export function CommentSidebar({
                 type="button"
                 className="rounded p-1 text-slate-400 hover:bg-red-100 hover:text-red-600"
                 onClick={() => onDelete(item.id)}
+                disabled={readOnly}
                 aria-label={`コメント ${idx + 1} を削除`}
               >
                 <Trash2 size={16} />
@@ -60,8 +63,9 @@ export function CommentSidebar({
               value={item.comment}
               onChange={(event) => onUpdateComment(item.id, event.target.value)}
               onFocus={() => onSelect(item.id)}
+              readOnly={readOnly}
               className="h-24 w-full resize-none rounded border border-slate-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none"
-              placeholder="修正内容を入力"
+              placeholder={readOnly ? "閲覧専用です" : "修正内容を入力"}
             />
             <p className="mt-2 text-xs text-slate-500">
               x:{Math.round(item.x)} y:{Math.round(item.y)} / w:{Math.round(item.width)} h:

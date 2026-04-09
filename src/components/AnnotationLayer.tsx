@@ -13,15 +13,17 @@ type DraftRect = {
 
 type AnnotationLayerProps = {
   annotations: Annotation[];
-  selectedId: number | null;
-  onSelect: (id: number) => void;
+  selectedId: string | null;
+  interactive: boolean;
+  onSelect: (id: string) => void;
   onCreate: (rect: { x: number; y: number; width: number; height: number }) => void;
-  onChange: (id: number, patch: Partial<Annotation>) => void;
+  onChange: (id: string, patch: Partial<Annotation>) => void;
 };
 
 export function AnnotationLayer({
   annotations,
   selectedId,
+  interactive,
   onSelect,
   onCreate,
   onChange
@@ -30,11 +32,11 @@ export function AnnotationLayer({
   const [draft, setDraft] = useState<DraftRect | null>(null);
 
   const indexMap = useMemo(() => {
-    return new Map<number, number>(annotations.map((item, i) => [item.id, i + 1]));
+    return new Map<string, number>(annotations.map((item, i) => [item.id, i + 1]));
   }, [annotations]);
 
   const beginDraft = (event: MouseEvent<HTMLDivElement>) => {
-    if (event.button !== 0 || !containerRef.current) {
+    if (!interactive || event.button !== 0 || !containerRef.current) {
       return;
     }
     const rect = containerRef.current.getBoundingClientRect();
@@ -51,7 +53,7 @@ export function AnnotationLayer({
   };
 
   const updateDraft = (event: MouseEvent<HTMLDivElement>) => {
-    if (!draft || !containerRef.current) {
+    if (!interactive || !draft || !containerRef.current) {
       return;
     }
     const rect = containerRef.current.getBoundingClientRect();
@@ -71,7 +73,7 @@ export function AnnotationLayer({
   };
 
   const finishDraft = () => {
-    if (!draft) {
+    if (!interactive || !draft) {
       return;
     }
     const minSize = 12;
@@ -89,11 +91,13 @@ export function AnnotationLayer({
   return (
     <div
       ref={containerRef}
-      className="absolute inset-0 z-20 cursor-crosshair select-none"
-      onMouseDown={beginDraft}
-      onMouseMove={updateDraft}
-      onMouseUp={finishDraft}
-      onMouseLeave={finishDraft}
+      className={`absolute inset-0 z-20 select-none ${
+        interactive ? "cursor-crosshair" : "pointer-events-none"
+      }`}
+      onMouseDown={interactive ? beginDraft : undefined}
+      onMouseMove={interactive ? updateDraft : undefined}
+      onMouseUp={interactive ? finishDraft : undefined}
+      onMouseLeave={interactive ? finishDraft : undefined}
     >
       {annotations.map((annotation) => (
         <AnnotationBox
@@ -101,6 +105,7 @@ export function AnnotationLayer({
           annotation={annotation}
           index={indexMap.get(annotation.id) ?? 0}
           selected={annotation.id === selectedId}
+          interactive={interactive}
           onSelect={() => onSelect(annotation.id)}
           onChange={onChange}
         />
